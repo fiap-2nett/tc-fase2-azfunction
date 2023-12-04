@@ -1,0 +1,11 @@
+version: '3.4'
+
+services:
+  techchallenge.db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+
+  techchallenge.functionapp:
+    image: ${DOCKER_REGISTRY-}techchallengefunctionapp
+    build:
+      context: .
+      dockerfile: TechChallenge.FunctionApp/Dockerfile

@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "TechChallenge.FunctionApp": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7066"
+    },
+    "Docker": {
+      "commandName": "Docker",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "httpPort": 33928,
+      "useSSL": false
+    }
+  }
+}

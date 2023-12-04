@@ -1,0 +1,23 @@
+version: '3.4'
+
+services:
+  techchallenge.db:
+    volumes:
+      - ./.containers/sqlserver:/var/opt/mssql/data
+    ports:
+      - "5433:1433"
+    networks:
+      - techchallenge
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=yourStrong(!)Password
+
+  techchallenge.functionapp:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - techchallenge.db
+
+networks:
+  techchallenge:
+    driver: bridge
