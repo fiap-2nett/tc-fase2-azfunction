@@ -25,6 +25,12 @@ namespace TechChallenge.Persistence.Configurations
             builder.Property(order => order.Status);
             builder.Property(order => order.CreatedAt);
             builder.Property(order => order.LastUpdatedAt);
+
+            builder.HasMany(order => order.Items)
+                .WithOne()
+                .HasForeignKey(orderItem => orderItem.OrderId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.NoAction);
         }
     }
 }

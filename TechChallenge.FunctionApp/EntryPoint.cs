@@ -8,6 +8,8 @@ using TechChallenge.Application.Dtos;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using TechChallenge.Application.Orders.Commands.CreateOrder;
+using TechChallenge.Application.Orders.Commands.AcceptOrder;
+using TechChallenge.Application.Orders.Commands.RejectOrder;
 
 namespace TechChallenge.FunctionApp
 {
@@ -15,7 +17,7 @@ namespace TechChallenge.FunctionApp
     {
         #region Constants
 
-        private const int ORDER_TIMEOUT_IN_MINUTES = 10;
+        private const double ORDER_TIMEOUT_IN_MINUTES = 3;
         private const string ACCEPT_ORDER_EVENT = "AcceptOrder";
 
         #endregion
@@ -66,14 +68,14 @@ namespace TechChallenge.FunctionApp
                     cts.Cancel();
 
                     var functionName = orderAccepted.Result
-                        ? nameof(SetOrderToProcessing)
-                        : nameof(SetOrderToReject);
+                        ? nameof(AcceptOrder)
+                        : nameof(RejectOrder);
                     
                     await context.CallActivityAsync(functionName, orderId);
                 }
                 else
                 {
-                    await context.CallActivityAsync(nameof(SetOrderToReject), orderId);
+                    await context.CallActivityAsync(nameof(RejectOrder), orderId);
                 }
             }
 
@@ -83,55 +85,30 @@ namespace TechChallenge.FunctionApp
         [FunctionName(nameof(CreateOrder))]
         public async Task<int> CreateOrder([ActivityTrigger] Order order, ILogger logger)
         {
+            logger.LogInformation($"Creating order.");
+            var result = await _sender.Send(new CreateOrderCommand(order.CustomerEmail, order.Items));
 
-            var response = await _sender.Send(new CreateOrderCommand(order.CustomerEmail, order.Items));
-            return int.MaxValue;
+            logger.LogInformation($"Order created with ID = '{result.Value}'.");
+
+            return result.Value;
         }
 
-        [FunctionName(nameof(SetOrderToProcessing))]
-        public async Task SetOrderToProcessing([ActivityTrigger] int orderId, ILogger logger)
-        { }
+        [FunctionName(nameof(AcceptOrder))]
+        public async Task AcceptOrder([ActivityTrigger] int orderId, ILogger logger)
+        {
+            logger.LogInformation($"Accepting order.");
+            await _sender.Send(new AcceptOrderCommand(orderId));
 
-        [FunctionName(nameof(SetOrderToReject))]
-        public async Task SetOrderToReject([ActivityTrigger] int orderId, ILogger logger)
-        { }
+            logger.LogInformation($"Order with ID = '{orderId}' has accepted.");
+        }
 
+        [FunctionName(nameof(RejectOrder))]
+        public async Task RejectOrder([ActivityTrigger] int orderId, ILogger logger)
+        {
+            logger.LogInformation($"Rejecting order.");
+            await _sender.Send(new RejectOrderCommand(orderId));
 
-
-        //[FunctionName("Function1")]
-        //public static async Task<List<string>> RunOrchestrator(
-        //    [OrchestrationTrigger] IDurableOrchestrationContext context)
-        //{
-        //    var outputs = new List<string>();
-
-        //    // Replace "hello" with the name of your Durable Activity Function.
-        //    outputs.Add(await context.CallActivityAsync<string>(nameof(SayHello), "Tokyo"));
-        //    outputs.Add(await context.CallActivityAsync<string>(nameof(SayHello), "Seattle"));
-        //    outputs.Add(await context.CallActivityAsync<string>(nameof(SayHello), "London"));
-
-        //    // returns ["Hello Tokyo!", "Hello Seattle!", "Hello London!"]
-        //    return outputs;
-        //}
-
-        //[FunctionName(nameof(SayHello))]
-        //public static string SayHello([ActivityTrigger] string name, ILogger log)
-        //{
-        //    log.LogInformation("Saying hello to {name}.", name);
-        //    return $"Hello {name}!";
-        //}
-
-        //[FunctionName("Function1_HttpStart")]
-        //public static async Task<HttpResponseMessage> HttpStart(
-        //    [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestMessage req,
-        //    [DurableClient] IDurableOrchestrationClient starter,
-        //    ILogger log)
-        //{
-        //    // Function input comes from the request content.
-        //    string instanceId = await starter.StartNewAsync("Function1", null);
-
-        //    log.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-        //    return starter.CreateCheckStatusResponse(req, instanceId);
-        //}
+            logger.LogInformation($"Order with ID = '{orderId}' has rejected.");
+        }
     }
 }

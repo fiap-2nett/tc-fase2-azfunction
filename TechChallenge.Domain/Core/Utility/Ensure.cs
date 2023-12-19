@@ -24,18 +24,6 @@ namespace TechChallenge.Domain.Core.Utility
                 throw new ArgumentException(message, argumentName);
         }
 
-        public static void NotEmpty(Guid value, string message, string argumentName)
-        {
-            if (value.IsEmpty())
-                throw new ArgumentException(message, argumentName);
-        }
-
-        public static void NotEmpty(DateTime value, string message, string argumentName)
-        {
-            if (value.IsDefault())
-                throw new ArgumentException(message, argumentName);
-        }
-
         #endregion
 
         #region LessThan Methods

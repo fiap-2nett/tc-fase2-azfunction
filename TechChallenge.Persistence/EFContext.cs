@@ -1,3 +1,6 @@
+using System;
+using MediatR;
+using System.Linq;
 using System.Threading;
 using System.Reflection;
 using System.Data.SqlClient;
@@ -7,17 +10,30 @@ using Microsoft.EntityFrameworkCore;
 using TechChallenge.Persistence.Extensions;
 using TechChallenge.Domain.Core.Primitives;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using TechChallenge.Application.Core.Abstractions.Data;
 
 namespace TechChallenge.Persistence
 {
     public sealed class EFContext : DbContext, IDbContext, IUnitOfWork
     {
+        #region Read-Only Fields
+
+        private readonly IMediator _mediator;
+
+        #endregion
+
         #region Constructors
 
-        public EFContext(DbContextOptions dbContextOptions)
+        internal EFContext(DbContextOptions dbContextOptions)
             : base(dbContextOptions)
         { }
+
+        public EFContext(DbContextOptions dbContextOptions, IMediator mediator)
+            : base(dbContextOptions)
+        {
+            _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+        }
 
         #endregion
 
@@ -50,6 +66,15 @@ namespace TechChallenge.Persistence
 
         #region IUnitOfWork Members
 
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var affectedRows = await base.SaveChangesAsync(cancellationToken);
+            if (affectedRows > 0)
+                await PublishDomainEventsAsync(cancellationToken);
+
+            return affectedRows;
+        }
+
         public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
             => Database.BeginTransactionAsync(cancellationToken);
 
@@ -65,6 +90,27 @@ namespace TechChallenge.Persistence
             modelBuilder.ApplySeedConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
             base.OnModelCreating(modelBuilder);
+        }
+
+        #endregion
+
+        #region Private Methods
+
+        private async Task PublishDomainEventsAsync(CancellationToken cancellationToken)
+        {
+            var aggregateRoots = ChangeTracker
+                .Entries<AggregateRoot>()
+                .Where(entityEntry => entityEntry.Entity.DomainEvents.Any())
+                .ToList();
+
+            var domainEvents = aggregateRoots.SelectMany(entityEntry => entityEntry.Entity.DomainEvents)
+                .ToList();
+
+            aggregateRoots.ForEach(entityEntry => entityEntry.Entity.ClearDomainEvents());
+
+            var tasks = domainEvents.Select(domainEvent => _mediator.Publish(domainEvent, cancellationToken));
+
+            await Task.WhenAll(tasks);
         }
 
         #endregion

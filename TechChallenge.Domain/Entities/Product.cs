@@ -21,13 +21,27 @@ namespace TechChallenge.Domain.Entities
 
         public Product(string name, decimal price, int quantity)
         {
-            Ensure.NotEmpty(name, ProductErrors.NameIsRequired.Message, nameof(name));
-            Ensure.GreaterThanOrEqual(price, 0.01M, ProductErrors.InvalidPrice.Message, nameof(price));
-            Ensure.GreaterThanOrEqual(quantity, 0, ProductErrors.NegativeQuantity.Message, nameof(quantity));
+            Ensure.NotEmpty(name, DomainErrors.Product.NameIsRequired.Message, nameof(name));
+            Ensure.GreaterThanOrEqual(price, 0.01M, DomainErrors.Product.InvalidPrice.Message, nameof(price));
+            Ensure.GreaterThanOrEqual(quantity, 0, DomainErrors.Product.NegativeQuantity.Message, nameof(quantity));
 
             Name = name;
             Price = price;
             Quantity = quantity;
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        public void AddQuantity(int quantity)
+        {
+            Quantity += quantity;
+        }
+
+        public void RemoveQuantity(int quantity)
+        {
+            Quantity -= quantity;
         }
 
         #endregion

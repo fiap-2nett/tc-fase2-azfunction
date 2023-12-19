@@ -18,13 +18,11 @@ namespace TechChallenge.Persistence.Configurations
             builder.Property(orderItem => orderItem.Price);
             builder.Property(orderItem => orderItem.Quantity);
 
-            builder.HasOne<Order>()
-                .WithMany(order => order.Items)
-                .HasForeignKey(orderItem => orderItem.OrderId).OnDelete(DeleteBehavior.NoAction);
-
             builder.HasOne<Product>()
                 .WithMany()
-                .HasForeignKey(orderItem => orderItem.ProductId).OnDelete(DeleteBehavior.NoAction);
+                .HasForeignKey(orderItem => orderItem.ProductId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.NoAction);
         }
     }
 }

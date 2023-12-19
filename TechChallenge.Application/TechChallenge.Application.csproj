@@ -18,9 +18,4 @@
     <ProjectReference Include="..\TechChallenge.Domain\TechChallenge.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Orders\Queries\" />
-    <Folder Include="Products\Queries\" />
-  </ItemGroup>
-
 </Project>

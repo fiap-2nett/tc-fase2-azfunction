@@ -13,6 +13,8 @@
 ## Tecnologias utilizadas
 
 - .NET 6.0
+- MediatR 12.0
+- FluentValidation 11.8
 - Entity Framework Core 3.2
 - SqlServer 2019
 - Docker 24.0.5
@@ -23,6 +25,8 @@
 - REST Api
 - Domain-Driven Design
 - EF Code-first
+- CQRS
+- Event-Driven
 - Service Pattern
 - Repository Pattern & Unit Of Work
 

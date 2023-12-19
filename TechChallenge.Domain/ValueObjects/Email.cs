@@ -40,13 +40,13 @@ namespace TechChallenge.Domain.ValueObjects
         public static Email Create(string email)
         {
             if (email.IsNullOrWhiteSpace())
-                throw new ArgumentException(EmailErrors.NullOrEmpty.Message, nameof(email));
+                throw new ArgumentException(DomainErrors.Email.NullOrEmpty.Message, nameof(email));
 
             if (email.Length > MaxLength)
-                throw new ArgumentException(EmailErrors.LongerThanAllowed.Message, nameof(email));
+                throw new ArgumentException(DomainErrors.Email.LongerThanAllowed.Message, nameof(email));
 
             if (!EmailFormatRegex.Value.IsMatch(email))
-                throw new ArgumentException(EmailErrors.InvalidFormat.Message, nameof(email));
+                throw new ArgumentException(DomainErrors.Email.InvalidFormat.Message, nameof(email));
 
             return new Email(email);
         }

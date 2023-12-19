@@ -22,9 +22,9 @@ namespace TechChallenge.Domain.Entities
 
         public OrderItem(int productId, decimal price, int quantity)
         {
-            Ensure.GreaterThanOrEqual(productId, 0, ProductErrors.NameIsRequired.Message, nameof(productId));
-            Ensure.GreaterThanOrEqual(price, 0M, ProductErrors.InvalidPrice.Message, nameof(price));
-            Ensure.GreaterThanOrEqual(quantity, 1, ProductErrors.NegativeQuantity.Message, nameof(quantity));
+            Ensure.GreaterThanOrEqual(productId, 0, DomainErrors.Product.NameIsRequired.Message, nameof(productId));
+            Ensure.GreaterThanOrEqual(price, 0M, DomainErrors.Product.InvalidPrice.Message, nameof(price));
+            Ensure.GreaterThanOrEqual(quantity, 1, DomainErrors.Product.NegativeQuantity.Message, nameof(quantity));
 
             ProductId = productId;
             Price = price;
