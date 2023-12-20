@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
-using TechChallenge.Domain.Errors;
 using System.Text.RegularExpressions;
+
+using TechChallenge.Domain.Errors;
 using TechChallenge.Domain.Extensions;
 using TechChallenge.Domain.Core.Primitives;
+using TechChallenge.Domain.Core.Primitives.Result;
 
 namespace TechChallenge.Domain.ValueObjects
 {
@@ -37,19 +39,12 @@ namespace TechChallenge.Domain.ValueObjects
 
         #region Factory Methods
 
-        public static Email Create(string email)
-        {
-            if (email.IsNullOrWhiteSpace())
-                throw new ArgumentException(DomainErrors.Email.NullOrEmpty.Message, nameof(email));
-
-            if (email.Length > MaxLength)
-                throw new ArgumentException(DomainErrors.Email.LongerThanAllowed.Message, nameof(email));
-
-            if (!EmailFormatRegex.Value.IsMatch(email))
-                throw new ArgumentException(DomainErrors.Email.InvalidFormat.Message, nameof(email));
-
-            return new Email(email);
-        }
+        public static Result<Email> Create(string email)
+            => Result.Create(email, DomainErrors.Email.NullOrEmpty)
+                .Ensure(email => !email.IsNullOrWhiteSpace(), DomainErrors.Email.NullOrEmpty)
+                .Ensure(email => email.Length <= MaxLength, DomainErrors.Email.LongerThanAllowed)
+                .Ensure(email => EmailFormatRegex.Value.IsMatch(email), DomainErrors.Email.InvalidFormat)
+                .Map(email => new Email(email));
 
         #endregion
 

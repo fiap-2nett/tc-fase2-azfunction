@@ -1,15 +1,25 @@
+using System;
 using MediatR;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
+using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
-using TechChallenge.Application.Dtos;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
+
+using TechChallenge.Domain.Errors;
+using TechChallenge.FunctionApp.Contracts;
+using TechChallenge.Domain.Core.Exceptions;
+using TechChallenge.Domain.Core.Primitives;
+using TechChallenge.Application.Orders.Contracts;
 using TechChallenge.Application.Orders.Commands.CreateOrder;
 using TechChallenge.Application.Orders.Commands.AcceptOrder;
 using TechChallenge.Application.Orders.Commands.RejectOrder;
+using ValidationException = TechChallenge.Application.Core.Exceptions.ValidationException;
 
 namespace TechChallenge.FunctionApp
 {
@@ -25,6 +35,11 @@ namespace TechChallenge.FunctionApp
         #region Read-Only
 
         private readonly ISender _sender;
+        private readonly JsonSerializerOptions _serializerOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
 
         #endregion
 
@@ -36,6 +51,8 @@ namespace TechChallenge.FunctionApp
         }
 
         #endregion
+
+        #region Functions
 
         [FunctionName("Order")]
         public async Task<HttpResponseMessage> HttpStart(
@@ -52,11 +69,19 @@ namespace TechChallenge.FunctionApp
         }
 
         [FunctionName(nameof(RunOrchestrator))]
-        public async Task<Order> RunOrchestrator(
+        public async Task RunOrchestrator(
             [OrchestrationTrigger] IDurableOrchestrationContext context)
         {
             var order = context.GetInput<Order>();
-            var orderId = await context.CallActivityAsync<int>(nameof(CreateOrder), order);
+            var orderResult = await context.CallActivityAsync<(bool IsSuccess, int? OrderId, Error Error)>(nameof(CreateOrder), order);
+
+            if (!orderResult.IsSuccess)
+            {
+                context.SetOutput(orderResult.Error.Message);
+                return;
+            }
+
+            var orderId = orderResult.OrderId.GetValueOrDefault();
 
             using (var cts = new CancellationTokenSource())
             {                
@@ -79,18 +104,30 @@ namespace TechChallenge.FunctionApp
                 }
             }
 
-            return order;
+            return;
         }
 
         [FunctionName(nameof(CreateOrder))]
-        public async Task<int> CreateOrder([ActivityTrigger] Order order, ILogger logger)
+        public async Task<(bool IsSuccess, int? OrderId, Error Error)> CreateOrder([ActivityTrigger] Order order, ILogger logger)
         {
-            logger.LogInformation($"Creating order.");
-            var result = await _sender.Send(new CreateOrderCommand(order.CustomerEmail, order.Items));
+            try
+            {
+                logger.LogInformation($"Creating order.");
+                var result = await _sender.Send(new CreateOrderCommand(order.CustomerEmail, order.Items));
 
-            logger.LogInformation($"Order created with ID = '{result.Value}'.");
+                if (result.IsSuccess)                    
+                    logger.LogInformation($"Order created with ID = '{result.Value}'.");
+                else
+                    logger.LogError(JsonSerializer.Serialize(new ErrorResponse(new[] { result.Error }), _serializerOptions));
 
-            return result.Value;
+                return (result.IsSuccess, result.Value, result.Error);
+            }
+            catch (Exception ex)
+            {
+                HandleException(ex, logger);
+            }
+
+            return (false, default, DomainErrors.General.UnProcessableRequest);            
         }
 
         [FunctionName(nameof(AcceptOrder))]
@@ -110,5 +147,25 @@ namespace TechChallenge.FunctionApp
 
             logger.LogInformation($"Order with ID = '{orderId}' has rejected.");
         }
+
+        #endregion
+
+        #region Private Methods
+
+        private void HandleException(Exception exception, ILogger logger)
+        {
+            (HttpStatusCode httpStatusCode, IReadOnlyCollection<Error> errors) = GetHttpStatusCodeAndErrors(exception);
+            logger.LogError(JsonSerializer.Serialize(new ErrorResponse(errors), _serializerOptions));
+        }
+
+        private (HttpStatusCode httpStatusCode, IReadOnlyCollection<Error>) GetHttpStatusCodeAndErrors(Exception exception)
+            => exception switch
+            {
+                ValidationException validationException => (HttpStatusCode.BadRequest, validationException.Errors),
+                DomainException domainException => (HttpStatusCode.BadRequest, new[] { domainException.Error }),
+                _ => (HttpStatusCode.InternalServerError, new[] { DomainErrors.General.ServerError })
+            };
+
+        #endregion
     }
 }

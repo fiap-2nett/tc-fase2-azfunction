@@ -31,5 +31,11 @@ namespace TechChallenge.Domain.Core.Primitives
         }
 
         #endregion
+
+        #region Operators
+
+        public static implicit operator string(Error error) => error?.Code ?? string.Empty;
+
+        #endregion
     }
 }

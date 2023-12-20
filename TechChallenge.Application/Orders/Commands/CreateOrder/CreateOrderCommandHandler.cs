@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-using TechChallenge.Domain.Entities;
+using TechChallenge.Domain.ValueObjects;
 using TechChallenge.Domain.Repositories;
 using TechChallenge.Application.Core.Messaging;
 using TechChallenge.Domain.Core.Primitives.Result;
@@ -11,7 +11,7 @@ using TechChallenge.Application.Core.Abstractions.Data;
 
 namespace TechChallenge.Application.Orders.Commands.CreateOrder
 {
-    internal sealed class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand, Result<int>>
+    internal sealed class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand, Result<int?>>
     {
         #region Read-Only Fields
 
@@ -32,24 +32,35 @@ namespace TechChallenge.Application.Orders.Commands.CreateOrder
 
         #endregion
 
-        public async Task<Result<int>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
+        public async Task<Result<int?>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
-            var order = Order.Create(request.CustomerEmail, await GetOrderItemProductAsync(request.Items));
+            var emailResult = Email.Create(request.CustomerEmail);
+            if (emailResult.IsFailure)
+                return Result.Failure<int?>(emailResult.Error);
+
+            var orderItemsResult = await GetOrderItemProductAsync(request.Items);
+            if (orderItemsResult.IsFailure)
+                return Result.Failure<int?>(orderItemsResult.Error);
+
+            var order = Domain.Entities.Order.Create(emailResult.Value, orderItemsResult.Value);
 
             _orderRepository.Insert(order);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            return Result.Success(order.Id);
+            return Result.Success<int?>(order.Id);
         }
 
-        private async Task<IEnumerable<(int ProductId, decimal Price, int Quantity)>> GetOrderItemProductAsync(IEnumerable<Dtos.OrderItem> items)
+        private async Task<Result<ICollection<Domain.Entities.OrderItem>>> GetOrderItemProductAsync(IEnumerable<Contracts.OrderItem> items)
         {
-            var output = new List<(int ProductId, decimal Price, int Quantity)>();
+            List<Domain.Entities.OrderItem> output = new();
 
             foreach (var item in items)
             {
-                var product = await _productRepository.GetByIdAsync(item.ProductId);
-                output.Add((item.ProductId, product.Price, item.Quantity));
+                var orderItemResult = await Domain.Entities.OrderItem.CreateAsync(_productRepository, item.ProductId, item.Quantity);
+                if (orderItemResult.IsFailure)
+                    return Result.Failure<ICollection<Domain.Entities.OrderItem>>(orderItemResult.Error);
+
+                output.Add(orderItemResult.Value);
             }
 
             return output;

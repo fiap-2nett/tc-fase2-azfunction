@@ -4,6 +4,17 @@ namespace TechChallenge.Domain.Errors
 {
     public static class DomainErrors
     {
+        public static class General
+        {
+            public static Error UnProcessableRequest => new Error(
+                "General.UnProcessableRequest",
+                "The server could not process the request.");
+
+            public static Error ServerError => new Error(
+                "General.ServerError",
+                "The server encountered an unrecoverable error.");
+        }
+
         public static class Email
         {
             public static Error NullOrEmpty => new Error(
@@ -21,6 +32,10 @@ namespace TechChallenge.Domain.Errors
 
         public static class Product
         {
+            public static Error NotFound = new Error(
+                "Product.NotFound",
+                "The product requested with the specified indentifier was not found.");
+
             public static Error NameIsRequired = new Error(
                 "Product.NameIsRequired",
                 "The product name is required.");
@@ -32,6 +47,10 @@ namespace TechChallenge.Domain.Errors
             public static Error NegativeQuantity = new Error(
                 "Product.NegativeQuantity",
                 "The product quantity cannot be negative.");
+
+            public static Error InsufficientStock = new Error(
+                "Product.InsufficientStock",
+                "Insufficient quantity of product in stock.");
         }
 
         public static class Order

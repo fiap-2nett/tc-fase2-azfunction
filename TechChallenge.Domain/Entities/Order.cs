@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using TechChallenge.Domain.Errors;
 using TechChallenge.Domain.Events;
-using TechChallenge.Domain.Extensions;
 using TechChallenge.Domain.Enumerations;
 using TechChallenge.Domain.ValueObjects;
 using TechChallenge.Domain.Core.Primitives;
@@ -27,21 +26,12 @@ namespace TechChallenge.Domain.Entities
         private Order()
         { }
 
-        private Order(Email email)
+        private Order(Email email, ICollection<OrderItem> items)
         {
+            Items = items;
             CustomerEmail = email;
             Status = OrderStatus.New;
             CreatedAt = DateTime.UtcNow;
-        }
-
-        #endregion
-
-        #region Private Methods
-
-        private void AddItem(int productId, decimal price, int quantity)
-        {
-            Items ??= new List<OrderItem>();
-            Items.Add(new OrderItem(productId, price, quantity));
         }
 
         #endregion
@@ -95,11 +85,9 @@ namespace TechChallenge.Domain.Entities
 
         #region Factory Methods
 
-        public static Order Create(string email, IEnumerable<(int ProductId, decimal Price, int Quantity)> items)
+        public static Order Create(Email customerEmail, ICollection<OrderItem> items)
         {
-            var order = new Order(Email.Create(email));
-            items.ForEach(item => order.AddItem(item.ProductId, item.Price, item.Quantity));
-
+            var order = new Order(customerEmail, items);
             order.AddDomainEvent(new OrderCreatedDomainEvent(order));
 
             return order;
