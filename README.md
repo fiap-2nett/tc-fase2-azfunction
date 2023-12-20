@@ -55,7 +55,7 @@ de eventos de domínio, seguindo o padrão arquitetural CQRS & Event-Driven.
 O Order AzFunction utiliza o paradigma de CodeFirst através dos recursos disponibilizados pelo Entity Framework, no entanto para melhor
 entendimento da modelagem de dados apresentamos a seguir o MER e suas respectivas definições:
 
-![image](https://github.com/fiap-2nett/tc-fase1/assets/57924071/99d35a0b-96b5-40fb-87f2-8c1c18776bd6)
+![orderitems](https://github.com/fiap-2nett/tc-fase2-azfunction/assets/57924071/13d2f0e7-d227-45a2-abcf-d25ec98c72fe)
 
 Com base na imagem acima iremos detalhar as tabelas e os dados contidos em cada uma delas:
 
@@ -78,7 +78,6 @@ dos serviços de infraestrutura, caso opte por executar o SQL Server através de
 ```sh
 $ docker compose up -d techchallenge.db
 ```
-
 O comando acima irá fazer o download da imagem do SQL Server 2019 e criará automaticamente um container local com o serviço em execução.
 Este comando irá configurar o container de SQL Server, todo o processo de criação do banco de dados e carregamento de tabelas padrões será
 realizado pelo Entity Framework no momento da execução do projeto.
@@ -105,9 +104,16 @@ facilitar a utilização e testes da plataforma, abaixo segue os dados inseridos
 | 1009      | Camiseta Upside Down                          | 54.90  | 3        |
 | 1010      | Camiseta Miskatonic University                | 54.90  | 3        |
 
+### Executando o projeto
+
+Ao executar o projeto será aberto uma instância do terminal identificando os endpoints disponíveis para utilização, são eles:
+
+![image](https://github.com/fiap-2nett/tc-fase2-azfunction/assets/57924071/0441b7ab-9257-4b31-b9f7-2f63267ff193)
+
 ### Criando um pedido
 
-Para realizar a criação de um pedido, basta realizar uma requisição HTTP do tipo POST para o endpoint ***, veja um exemplo:
+Para realizar a criação de um pedido, basta realizar uma requisição HTTP do tipo POST para o endpoint
+`Order: [POST] http://localhost:7066/api/Order`, veja um exemplo:
 
 ```curl
 curl --location 'http://localhost:7066/api/Order' \
@@ -130,7 +136,7 @@ curl --location 'http://localhost:7066/api/Order' \
 ### Aprovar um pedido
 
 Para aprovar um pedido, utilize o endpoint sendEventPostUri listado no corpo de resposta de criação do pedido substituindo o
-parâmetro da URL {eventName} pelo valor AcceptOrder e no corpo da requisição informe o valor true, veja um exemplo abaixo:
+parâmetro da URL `{eventName}` pelo valor `AcceptOrder` e no corpo da requisição informe o valor `true`, veja um exemplo abaixo:
 
 ```curl
 curl --location 'http://localhost:7066/runtime/webhooks/durabletask/instances/2b0122651b0b4372a1034a18e1ad9510/raiseEvent/AcceptOrder?taskHub=TestHubName&connection=Storage&code=3sw1zqCdUnPK-i8NFNAIWQ6BfRpIqa43CnrANVKXfQmOAzFuuff12A%3D%3D' \
@@ -140,8 +146,8 @@ curl --location 'http://localhost:7066/runtime/webhooks/durabletask/instances/2b
 
 ### Reprovar um pedido
 
-Para reprovar um pedido, utilize o endpoint sendEventPostUri listado no corpo de resposta de criação do pedido substituindo o
-parâmetro da URL {eventName} pelo valor AcceptOrder e no corpo da requisição informe o valor false, veja um exemplo abaixo:
+Para reprovar um pedido, utilize o endpoint `sendEventPostUri` listado no corpo de resposta de criação do pedido substituindo
+o parâmetro da URL `{eventName}` pelo valor `AcceptOrder` e no corpo da requisição informe o valor `false`, veja um exemplo abaixo:
 
 ```curl
 curl --location 'http://localhost:7066/runtime/webhooks/durabletask/instances/2b0122651b0b4372a1034a18e1ad9510/raiseEvent/AcceptOrder?taskHub=TestHubName&connection=Storage&code=3sw1zqCdUnPK-i8NFNAIWQ6BfRpIqa43CnrANVKXfQmOAzFuuff12A%3D%3D' \
@@ -151,8 +157,8 @@ curl --location 'http://localhost:7066/runtime/webhooks/durabletask/instances/2b
 
 ### Obter detalhes do pedido
 
-Para obter detalhes de um pedido, utilize o endpoint statusQueryGetUri listado no corpo de resposta de criação do pedido,
-veja um exemplo abaixo:
+Para obter detalhes de um pedido, utilize o endpoint `statusQueryGetUri` listado no corpo de resposta de criação do pedido, veja
+um exemplo abaixo:
 
 ```curl
 curl --location 'http://localhost:7066/runtime/webhooks/durabletask/instances/12669ec261f64ec2816edd7cda345896?taskHub=TestHubName&connection=Storage&code=3sw1zqCdUnPK-i8NFNAIWQ6BfRpIqa43CnrANVKXfQmOAzFuuff12A%3D%3D'
