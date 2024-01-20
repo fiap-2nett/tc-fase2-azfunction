@@ -95,7 +95,9 @@ namespace TechChallenge.FunctionApp
                     var functionName = orderAccepted.Result
                         ? nameof(AcceptOrder)
                         : nameof(RejectOrder);
-                    
+
+                    context.SetOutput(DomainErrors.Order.AlreadyProcessing);
+
                     await context.CallActivityAsync(functionName, orderId);
                 }
                 else

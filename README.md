@@ -48,7 +48,7 @@ de eventos de domínio, seguindo o padrão arquitetural CQRS & Event-Driven.
 | _TechChallenge.FunctionApp_           | Contém a implementação da Azure Durable Function.                                            |
 | _TechChallenge.Application_           | Contém a implementação dos componentes de negócios (commands, handlers, validators e events. |
 | _TechChallenge.Domain_                | Contém a implementação das entidades e interfaces do domínio da aplicação.                   |
-| _TechChallenge.Persistence_           | Contém a implementação dos componentes relacionados a consulta e persistencia de dados.      |
+| _TechChallenge.Persistence_           | Contém a implementação dos componentes relacionados a consulta e persistência de dados.      |
 
 ## Modelagem de dados
 
@@ -69,7 +69,7 @@ Com base na imagem acima iremos detalhar as tabelas e os dados contidos em cada 
 
 ### Inicializando o Banco de Dados
 
-A Order AzFunction utiliza como banco de dados o SQL Server 2019 ou superior, toda a infraestrtura necessária para execução do projeto
+A Order AzFunction utiliza como banco de dados o SQL Server 2019 ou superior, toda a infraestrutura necessária para execução do projeto
 pode ser provisionada automaticamente através do Docker.
 
 No diretório raíz do projeto, existem os arquivos docker-compose.yml que contém toda a configuração necessária para provisionamento
@@ -155,6 +155,33 @@ curl --location 'http://localhost:7066/runtime/webhooks/durabletask/instances/2b
 --data 'false'
 ```
 
+### Cancelar um pedido
+
+Para cancelar um pedido, utilize o endpoint `terminatePostUri` listado no corpo de resposta de criação do pedido substituindo
+o parâmetro da URL `{text}` pelo motivo que o pedido será cancelado, vide exemplo abaixo:
+
+```curl
+curl --location --request POST 'http://localhost:7066/runtime/webhooks/durabletask/instances/e36ba21c16d2450aa8338991fe8e4c28/terminate?reason=Usuario%20pediu%20cancelamento&taskHub=TestHubName&connection=Storage&code=eHoKkaae5Ozug1tNo8axoLeyIR7mYBarW_ipCRBXn8t4AzFuEkfavw%3D%3D'
+```
+
+### Deixar um Pedido Suspenso
+
+Para deixar um pedido suspenso, utilize o endpoint `suspendPostUri` listado no corpo de resposta de criação do pedido substituindo
+o parâmetro da URL `{text}` pelo motivo que o pedido ficará suspenso, vide exemplo abaixo:
+
+```curl
+curl --location --request POST 'http://localhost:7066/runtime/webhooks/durabletask/instances/e7bc9a38c32f4600ac775b0dc65576fd/suspend?reason=Usuario%20pediu%20que%20a%20compra%20fosse%20debitada%20somente%20apos%20o%20dia%2015&taskHub=TestHubName&connection=Storage&code=eHoKkaae5Ozug1tNo8axoLeyIR7mYBarW_ipCRBXn8t4AzFuEkfavw%3D%3D'
+``` 
+
+### Retornar um Pedido Suspenso para Ativo
+
+Para retornar um pedido  que estava suspenso para ativo, utilize o endpoint `resumePostUri` listado no corpo de resposta de criação do pedido substituindo
+o parâmetro da URL `{text}` pelo motivo que o pedido retornará para ativo, vide exemplo abaixo:
+
+```curl
+curl --location --request POST 'http://localhost:7066/runtime/webhooks/durabletask/instances/e7bc9a38c32f4600ac775b0dc65576fd/resume?reason=O%20usuario%20mudou%20de%20ideia%20e%20pediu%20pra%20debitar%20o%20mais%20rapido%20possivel&taskHub=TestHubName&connection=Storage&code=eHoKkaae5Ozug1tNo8axoLeyIR7mYBarW_ipCRBXn8t4AzFuEkfavw%3D%3D'
+```
+
 ### Obter detalhes do pedido
 
 Para obter detalhes de um pedido, utilize o endpoint `statusQueryGetUri` listado no corpo de resposta de criação do pedido, veja
@@ -163,3 +190,14 @@ um exemplo abaixo:
 ```curl
 curl --location 'http://localhost:7066/runtime/webhooks/durabletask/instances/12669ec261f64ec2816edd7cda345896?taskHub=TestHubName&connection=Storage&code=3sw1zqCdUnPK-i8NFNAIWQ6BfRpIqa43CnrANVKXfQmOAzFuuff12A%3D%3D'
 ```
+
+### Deletar Pedido
+
+Para deletar um pedido, utilize o endpoint `purgeHistoryDeleteUri` listado no corpo de resposta de criação do pedido, veja
+um exemplo abaixo:
+
+```curl
+curl --location --request DELETE 'http://localhost:7066/runtime/webhooks/durabletask/instances/e7bc9a38c32f4600ac775b0dc65576fd?taskHub=TestHubName&connection=Storage&code=eHoKkaae5Ozug1tNo8axoLeyIR7mYBarW_ipCRBXn8t4AzFuEkfavw%3D%3D'
+```
+
+
